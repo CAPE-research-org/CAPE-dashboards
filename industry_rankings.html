@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang=en><head><meta charset=UTF-8>
+<title>Industry Rankings (Refreshed) — Corporate PAC Giving</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:24px;background:#f7f8fa;color:#1a1a1a;}
+ h1{margin:0 0 4px;font-size:26px;}.sub{color:#555;margin-bottom:20px;font-size:14px;}
+ .card{background:#fff;border-radius:12px;padding:20px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #eaeaea;}
+ .card h2{margin:0 0 6px;font-size:16px;color:#1F4E79;}.desc{font-size:12px;color:#666;margin-bottom:14px;}
+ .row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
+ .chart-wrap{position:relative;height:380px;}.chart-wrap.tall{height:560px;}
+ .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+ .mini{background:#fff;border-radius:10px;padding:14px;border:1px solid #eaeaea;}
+ .mini h3{margin:0 0 4px;font-size:14px;color:#1F4E79;display:flex;justify-content:space-between;align-items:baseline;}
+ .mini h3 .total{font-weight:400;color:#888;font-size:12px;}.mini .chart-wrap{height:180px;}
+ .controls{margin-bottom:10px;}.controls button{padding:5px 10px;font-size:12px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer;margin-right:4px;}
+ .controls button.active{background:#1F4E79;color:#fff;border-color:#1F4E79;}
+ @media(max-width:900px){.row{grid-template-columns:1fr;}.grid{grid-template-columns:1fr 1fr;}}
+ .footer{text-align:center;color:#888;font-size:12px;margin-top:24px;}
+</style></head><body>
+<h1>Industry Rankings &mdash; Corporate PAC Giving</h1>
+<div class=sub>Refreshed from the updated file via firms_master.csv. Matched corporate-PAC money, 2023&ndash;2024.</div>
+<div class=row>
+ <div class=card><h2>Industry Share of Total Giving</h2>
+  <div class=desc>Each slice = an industry's share of total matched corporate-PAC dollars</div>
+  <div class=chart-wrap><canvas id=pie></canvas></div></div>
+ <div class=card><h2>Industry Ranking (Total Dollars)</h2>
+  <div class=desc>Biggest at the top. Toggle to split by transaction type.</div>
+  <div class="controls"><button data-m=total class=active>Total $</button><button data-m=type>By type (Direct / FOR / AGAINST)</button></div>
+  <div class=chart-wrap tall><canvas id=bar></canvas></div></div>
+</div>
+<div class=card><h2>Top 3 Firms in Each Industry</h2>
+ <div class=desc>Each mini-chart shows the leading 1&ndash;3 firms ranked by total contributions ($)</div>
+ <div class=grid id=grid></div></div>
+<div class=footer>Source: FEC (updated file) &middot; firms_master.csv crosswalk &middot; CAPE project</div>
+<script>
+const D={"industries": [{"industry": "Legal", "total": 139000.0, "n_firms": 1, "n_txns": 51, "direct": 139000.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Hall Render Killian Heath & Lyman", "amt": 139000.0}]}, {"industry": "Defense", "total": 110000.0, "n_firms": 3, "n_txns": 50, "direct": 110000.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Torch Technologies", "amt": 79600.0}, {"firm": "Austal USA", "amt": 27900.0}, {"firm": "L3Harris", "amt": 2500.0}]}, {"industry": "Healthcare", "total": 100955.0, "n_firms": 1, "n_txns": 29, "direct": 0.0, "ie_for": 100955.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "UnitedHealth Group", "amt": 100955.0}]}, {"industry": "Insurance", "total": 63500.0, "n_firms": 2, "n_txns": 33, "direct": 63500.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Sammons Enterprises", "amt": 46500.0}, {"firm": "Lincoln National", "amt": 17000.0}]}, {"industry": "Education", "total": 62500.0, "n_firms": 1, "n_txns": 31, "direct": 62500.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Universal Technical Institute", "amt": 62500.0}]}, {"industry": "Banking", "total": 53000.0, "n_firms": 2, "n_txns": 16, "direct": 53000.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Fifth Third Bancorp", "amt": 33000.0}, {"firm": "Cadence Bank", "amt": 20000.0}]}, {"industry": "Healthcare Services", "total": 51700.0, "n_firms": 1, "n_txns": 26, "direct": 51700.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "VGM Group", "amt": 51700.0}]}, {"industry": "Shipping", "total": 48802.0, "n_firms": 2, "n_txns": 18, "direct": 45500.0, "ie_for": 0.0, "ie_against": 0.0, "other": 3302.0, "top_firms": [{"firm": "Matson", "amt": 25000.0}, {"firm": "Ingram Barge", "amt": 23802.0}]}, {"industry": "Retail", "total": 40500.0, "n_firms": 1, "n_txns": 12, "direct": 40500.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "1-800 Contacts", "amt": 40500.0}]}, {"industry": "Beverages", "total": 32765.0, "n_firms": 2, "n_txns": 11, "direct": 32652.0, "ie_for": 0.0, "ie_against": 0.0, "other": 113.0, "top_firms": [{"firm": "Constellation Brands", "amt": 32500.0}, {"firm": "PepsiCo", "amt": 265.0}]}, {"industry": "Energy", "total": 30383.0, "n_firms": 1, "n_txns": 10, "direct": 30383.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Denbury", "amt": 30383.0}]}, {"industry": "Engineering", "total": 29000.0, "n_firms": 1, "n_txns": 8, "direct": 29000.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Burns & McDonnell", "amt": 29000.0}]}, {"industry": "Spirits", "total": 26895.0, "n_firms": 1, "n_txns": 49, "direct": 16699.0, "ie_for": 0.0, "ie_against": 0.0, "other": 10196.0, "top_firms": [{"firm": "Sazerac", "amt": 26895.0}]}, {"industry": "Industrial Gases", "total": 26500.0, "n_firms": 1, "n_txns": 13, "direct": 26500.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Air Liquide", "amt": 26500.0}]}, {"industry": "Electronics", "total": 23500.0, "n_firms": 1, "n_txns": 9, "direct": 23500.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Garmin", "amt": 23500.0}]}, {"industry": "Forest Products", "total": 22150.0, "n_firms": 1, "n_txns": 9, "direct": 22150.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Westervelt", "amt": 22150.0}]}, {"industry": "Renewable Energy", "total": 20000.0, "n_firms": 1, "n_txns": 9, "direct": 20000.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Intersect Power", "amt": 20000.0}]}, {"industry": "Coal", "total": 19200.0, "n_firms": 1, "n_txns": 6, "direct": 19200.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Peabody Energy", "amt": 19200.0}]}, {"industry": "Utility", "total": 17500.0, "n_firms": 1, "n_txns": 13, "direct": 17500.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "TECO Energy", "amt": 17500.0}]}, {"industry": "Media", "total": 17300.0, "n_firms": 1, "n_txns": 7, "direct": 17300.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "Salem Media Group", "amt": 17300.0}]}, {"industry": "Telecom", "total": 12500.0, "n_firms": 1, "n_txns": 27, "direct": 12000.0, "ie_for": 0.0, "ie_against": 0.0, "other": 500.0, "top_firms": [{"firm": "T-Mobile", "amt": 12500.0}]}, {"industry": "Food Service", "total": 6684.0, "n_firms": 1, "n_txns": 8, "direct": 6684.0, "ie_for": 0.0, "ie_against": 0.0, "other": 0.0, "top_firms": [{"firm": "McDonald's", "amt": 6684.0}]}, {"industry": "Automotive", "total": 238.0, "n_firms": 1, "n_txns": 1, "direct": 0.0, "ie_for": 0.0, "ie_against": 0.0, "other": 238.0, "top_firms": [{"firm": "Toyota", "amt": 238.0}]}]};const inds=D.industries;
+const pal=['#1F4E79','#E07B00','#2E8B57','#B83A3A','#6A4C9C','#0E7C7B','#C44569','#5B7553','#D4A017','#3A5F8F','#A0522D','#4682B4','#8B4513','#708090','#9370DB','#20B2AA','#CD5C5C','#556B2F','#BC8F8F','#4169E1','#DAA520','#5F9EA0','#FF7F50'];
+const fmt=n=>'$'+Math.round(n).toLocaleString();const fmtS=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'k':'$'+v;
+// donut
+new Chart(pie,{type:'doughnut',data:{labels:inds.map(d=>d.industry),datasets:[{data:inds.map(d=>d.total),backgroundColor:pal,borderWidth:1,borderColor:'#fff'}]},
+ options:{plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return c.label+': '+fmt(c.parsed)+' ('+(c.parsed/t*100).toFixed(1)+'%)';}}}},maintainAspectRatio:false}});
+// bar with toggle
+let bc=null,mode='total';
+function drawBar(){
+ let ds;
+ if(mode==='total')ds=[{label:'Total $',data:inds.map(d=>d.total),backgroundColor:inds.map((_,i)=>pal[i%pal.length]),borderRadius:4}];
+ else ds=[
+  {label:'Direct contribution',data:inds.map(d=>d.direct),backgroundColor:'#1F4E79',stack:'a'},
+  {label:'Indep. exp. FOR',data:inds.map(d=>d.ie_for),backgroundColor:'#2E8B57',stack:'a'},
+  {label:'Indep. exp. AGAINST',data:inds.map(d=>d.ie_against),backgroundColor:'#B83A3A',stack:'a'},
+  {label:'Other',data:inds.map(d=>d.other),backgroundColor:'#999',stack:'a'}];
+ if(bc)bc.destroy();
+ bc=new Chart(bar,{type:'bar',data:{labels:inds.map(d=>d.industry),datasets:ds},
+  options:{indexAxis:'y',plugins:{legend:{display:mode!=='total',position:'bottom',labels:{font:{size:10}}},
+   tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt(c.parsed.x)}`,footer:i=>{const r=inds[i[0].dataIndex];return `${r.n_firms} firm(s) · ${r.n_txns} txns · total ${fmt(r.total)}`;}}}},
+   scales:{x:{stacked:mode!=='total',ticks:{callback:fmtS}},y:{stacked:mode!=='total',ticks:{font:{size:11}}}},maintainAspectRatio:false}});
+}
+document.querySelectorAll('.controls button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.controls button').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.m;drawBar();});
+drawBar();
+// mini grid
+const grid=document.getElementById('grid');
+inds.forEach((ind,idx)=>{const f=ind.top_firms;
+ const card=document.createElement('div');card.className='mini';
+ card.innerHTML=`<h3><span>${ind.industry}</span><span class=total>${fmt(ind.total)}</span></h3><div class=chart-wrap><canvas></canvas></div>`;
+ grid.appendChild(card);
+ new Chart(card.querySelector('canvas'),{type:'bar',data:{labels:f.map(x=>x.firm.length>22?x.firm.slice(0,20)+'…':x.firm),
+  datasets:[{data:f.map(x=>x.amt),backgroundColor:f.map((_,i)=>[pal[idx%pal.length],'#7FA9C9','#BFD2E0'][i]),borderRadius:3}]},
+  options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{title:c=>f[c[0].dataIndex].firm,label:c=>fmt(c.parsed.x)}}},
+   scales:{x:{ticks:{callback:fmtS,font:{size:10}}},y:{ticks:{font:{size:11}}}},maintainAspectRatio:false}});});
+</script></body></html>

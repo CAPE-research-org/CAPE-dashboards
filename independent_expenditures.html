@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>Independent Expenditure Analysis — 2024 Super PAC Spending</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:24px;background:#f7f8fa;color:#1a1a1a;}
+  h1{margin:0 0 4px 0;font-size:26px;}
+  .sub{color:#555;margin-bottom:20px;font-size:14px;}
+  .card{background:#fff;border-radius:12px;padding:20px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);border:1px solid #eaeaea;}
+  .card h2{margin:0 0 6px 0;font-size:18px;color:#1F4E79;}
+  .desc{font-size:12px;color:#666;margin-bottom:14px;}
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px;}
+  .stat{background:#f0f4f9;border-radius:8px;padding:14px;}
+  .stat .lbl{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.5px;}
+  .stat .val{font-size:20px;font-weight:600;color:#1F4E79;margin-top:4px;}
+  .stat .sub2{font-size:11px;color:#888;margin-top:2px;}
+  .chart-wrap{position:relative;height:420px;}
+  .chart-wrap.tall{height:560px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .note{background:#FFF4E5;border-left:4px solid #E07B00;padding:12px 16px;border-radius:6px;font-size:13px;color:#5c3a00;margin-bottom:20px;}
+  @media(max-width:900px){.row2{grid-template-columns:1fr;}}
+  .footer{text-align:center;color:#888;font-size:12px;margin-top:24px;}
+</style></head><body>
+<h1>Independent Expenditure Analysis</h1>
+<div class="sub">2024 Super PAC ad spending (FEC transaction types 24E "for" + 24A "against")</div>
+
+<div class="note"><strong>What this data is:</strong> 93% of rows are independent expenditures — money Super PACs spent on ads supporting or opposing candidates, NOT contributions to candidates. The "contractor" figures below are payments TO vendors (ad/media firms that are also federal contractors), not donations from contractors.</div>
+
+<div class="card"><div class="summary" id="summary"></div></div>
+
+<div class="row2">
+  <div class="card">
+    <h2>FOR vs AGAINST — by party</h2>
+    <div class="desc">Dollars spent supporting vs opposing each party's candidates</div>
+    <div class="chart-wrap"><canvas id="party"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>FOR vs AGAINST — by office</h2>
+    <div class="desc">President / Senate / House</div>
+    <div class="chart-wrap"><canvas id="office"></canvas></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Most-targeted candidates</h2>
+  <div class="desc">Top 25 candidates by total IE dollars for + against them. Candidates deduplicated across multiple FEC IDs (e.g., Eric Hovde, who ran in 2012 and 2024). Green = supporting, red = opposing.</div>
+  <div class="chart-wrap tall"><canvas id="cands"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>Top Super PACs by spending</h2>
+  <div class="desc">Top 25 committees by total IE dollars; split by for/against</div>
+  <div class="chart-wrap tall"><canvas id="pacs"></canvas></div>
+</div>
+
+<div class="row2">
+  <div class="card">
+    <h2>Contractor-vendors paid the most</h2>
+    <div class="desc">Federal-contractor firms (SAM.gov matched) paid by Super PACs for ad work</div>
+    <div class="chart-wrap tall"><canvas id="vendors"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Vendor spending by industry (NAICS)</h2>
+    <div class="desc">What kinds of contractor-vendors get the money</div>
+    <div class="chart-wrap tall"><canvas id="naics"></canvas></div>
+  </div>
+</div>
+
+<div class="footer">Source: FEC independent expenditures (2024) · SAM.gov contractor match · CAPE project</div>
+
+<script>
+const D = {"for_against_overall": [{"direction": "AGAINST", "total": 2554313719.0, "n": 18987}, {"direction": "FOR", "total": 1932829954.0, "n": 50200}], "for_against_party": [{"name": "Democrat", "FOR": 1104033499.0, "AGAINST": 1459022494.0, "total": 2563055993.0}, {"name": "Republican", "FOR": 776035964.0, "AGAINST": 1044887171.0, "total": 1820923135.0}, {"name": "Other/Unknown", "FOR": 18825516.0, "AGAINST": 34956867.0, "total": 53782383.0}, {"name": "Independent", "FOR": 25718925.0, "AGAINST": 15392341.0, "total": 41111266.0}, {"name": "Libertarian", "FOR": 6848078.0, "AGAINST": 0.0, "total": 6848078.0}, {"name": "Green", "FOR": 683038.0, "AGAINST": 54846.0, "total": 737884.0}, {"name": "Unknown", "FOR": 684934.0, "AGAINST": 0.0, "total": 684934.0}], "for_against_office": [{"name": "President", "FOR": 1211756506.0, "AGAINST": 867451014.0, "total": 2079207520.0}, {"name": "Senate", "FOR": 386138227.0, "AGAINST": 980252694.0, "total": 1366390921.0}, {"name": "House", "FOR": 316219276.0, "AGAINST": 671655144.0, "total": 987874420.0}, {"name": "Other/Unknown", "FOR": 18715945.0, "AGAINST": 34954867.0, "total": 53670812.0}], "contractor_vendors": [{"name": "UNITED STATES POSTAL SERVICE", "total": 40780226.0, "n": 894, "n_cmtes": 11}, {"name": "SKDKNICKERBOCKER LLC", "total": 20264812.0, "n": 244, "n_cmtes": 10}, {"name": "INVICTUS ADVERTISING, LLC", "total": 19971230.0, "n": 134, "n_cmtes": 10}, {"name": "PEOPLE WHO THINK, L.L.C.", "total": 16265640.0, "n": 747, "n_cmtes": 2}, {"name": "TRILOGY INTERACTIVE LLC", "total": 16148587.0, "n": 228, "n_cmtes": 12}, {"name": "GOOGLE LLC", "total": 15000491.0, "n": 2815, "n_cmtes": 26}, {"name": "ACE CONSULTING GROUP LLC", "total": 13691793.0, "n": 97, "n_cmtes": 3}, {"name": "META LLC", "total": 10345171.0, "n": 616, "n_cmtes": 26}, {"name": "MOXIE MEDIA, INC.", "total": 8351911.0, "n": 64, "n_cmtes": 9}, {"name": "MISSION CONTROL LLC", "total": 7016846.0, "n": 184, "n_cmtes": 15}, {"name": "CBS BROADCASTING INC.", "total": 6120000.0, "n": 1, "n_cmtes": 1}, {"name": "BUYING TIME L.L.C.", "total": 4973350.0, "n": 9, "n_cmtes": 2}, {"name": "CONVERGENCE MEDIA, LLC", "total": 3923000.0, "n": 70, "n_cmtes": 2}, {"name": "THE COLIBRI COLLECTIVE LLC", "total": 2832511.0, "n": 37, "n_cmtes": 7}, {"name": "PINPOINT MEDIA LLC", "total": 2437525.0, "n": 10, "n_cmtes": 2}, {"name": "CLEAR CHANNEL OUTDOOR, LLC", "total": 2240954.0, "n": 114, "n_cmtes": 10}, {"name": "ADQUICK, INC.", "total": 1878605.0, "n": 27, "n_cmtes": 2}, {"name": "SANT POU LAKILTI AK DEVLOPMAN KARIS", "total": 1681998.0, "n": 22, "n_cmtes": 2}, {"name": "UPLIFT", "total": 1507581.0, "n": 28, "n_cmtes": 8}, {"name": "HBP MARKETING, LLC", "total": 1407803.0, "n": 140, "n_cmtes": 1}, {"name": "LAMAR TEXAS LIMITED PARTNERSHIP", "total": 1219725.0, "n": 33, "n_cmtes": 2}, {"name": "QUAD/GRAPHICS, INC.", "total": 1071311.0, "n": 8, "n_cmtes": 1}, {"name": "FENTON COMMUNICATIONS, INC", "total": 944530.0, "n": 18, "n_cmtes": 2}, {"name": "M & R STRATEGIC SERVICES, INC", "total": 890021.0, "n": 29, "n_cmtes": 3}, {"name": "UNITE HERE", "total": 847422.0, "n": 123, "n_cmtes": 2}], "contractor_naics": [{"name": "Postal Service", "total": 40780226.0, "n": 894}, {"name": "Public Relations", "total": 22261485.0, "n": 286}, {"name": "323113", "total": 19987157.0, "n": 158}, {"name": "Media Advertising Reps", "total": 16316332.0, "n": 762}, {"name": "Graphic Design", "total": 16204869.0, "n": 231}, {"name": "Software Publishers", "total": 15008091.0, "n": 2819}, {"name": "541611", "total": 13900819.0, "n": 122}, {"name": "Services Elderly/Disabled", "total": 10345171.0, "n": 616}, {"name": "611430", "total": 8354411.0, "n": 65}, {"name": "541830", "total": 7601426.0, "n": 41}, {"name": "Computer Systems Design", "total": 7302763.0, "n": 248}, {"name": "516120", "total": 6222569.0, "n": 6}], "top_candidates": [{"name": "HARRIS, KAMALA", "office": "President", "party": "Democrat", "FOR": 545886291.0, "AGAINST": 560796593.0, "total": 1106682884.0, "n_ids": 1}, {"name": "TRUMP, DONALD J.", "office": "President", "party": "Republican", "FOR": 238531945.0, "AGAINST": 163483239.0, "total": 402015184.0, "n_ids": 1}, {"name": "BIDEN, JOSEPH R JR", "office": "President", "party": "Democrat", "FOR": 224015421.0, "AGAINST": 63139022.0, "total": 287154443.0, "n_ids": 1}, {"name": "MORENO, BERNIE", "office": "Senate", "party": "Republican", "FOR": 69890571.0, "AGAINST": 85643104.0, "total": 155533675.0, "n_ids": 1}, {"name": "BROWN, SHERROD", "office": "Senate", "party": "Democrat", "FOR": 25742815.0, "AGAINST": 116006451.0, "total": 141749266.0, "n_ids": 1}, {"name": "CASEY, ROBERT P. JR.", "office": "Senate", "party": "Democrat", "FOR": 21833237.0, "AGAINST": 104840211.0, "total": 126673448.0, "n_ids": 1}, {"name": "HALEY, NIKKI", "office": "President", "party": "Republican", "FOR": 86474398.0, "AGAINST": 24882316.0, "total": 111356714.0, "n_ids": 1}, {"name": "MCCORMICK, DAVE", "office": "Senate", "party": "Republican", "FOR": 29339835.0, "AGAINST": 79160066.0, "total": 108499901.0, "n_ids": 1}, {"name": "DESANTIS, RON", "office": "President", "party": "Republican", "FOR": 36098782.0, "AGAINST": 47601499.0, "total": 83700281.0, "n_ids": 1}, {"name": "SHEEHY, TIM", "office": "Senate", "party": "Republican", "FOR": 18614347.0, "AGAINST": 64773514.0, "total": 83387861.0, "n_ids": 1}, {"name": "TESTER, R. JON", "office": "Senate", "party": "Democrat", "FOR": 16694764.0, "AGAINST": 63331091.0, "total": 80025855.0, "n_ids": 1}, {"name": "SLOTKIN, ELISSA", "office": "Senate", "party": "Democrat", "FOR": 24308724.0, "AGAINST": 54756716.0, "total": 79065440.0, "n_ids": 1}, {"name": "ROGERS, MICHAEL J", "office": "Senate", "party": "Republican", "FOR": 25032024.0, "AGAINST": 39083522.0, "total": 64115546.0, "n_ids": 1}, {"name": "HOVDE, ERIC D", "office": "Senate", "party": "Republican", "FOR": 11238020.0, "AGAINST": 50469674.0, "total": 61707694.0, "n_ids": 2}, {"name": "BALDWIN, TAMMY", "office": "Senate", "party": "Democrat", "FOR": 8927799.0, "AGAINST": 52094957.0, "total": 61022756.0, "n_ids": 1}, {"name": "BROWN, SAM", "office": "Senate", "party": "Republican", "FOR": 14568941.0, "AGAINST": 44390912.0, "total": 58959853.0, "n_ids": 1}, {"name": "GALLEGO, RUBEN", "office": "Senate", "party": "Democrat", "FOR": 24849454.0, "AGAINST": 21221280.0, "total": 46070734.0, "n_ids": 1}, {"name": "ALLRED, COLIN", "office": "Senate", "party": "Democrat", "FOR": 11625304.0, "AGAINST": 32542417.0, "total": 44167721.0, "n_ids": 1}, {"name": "ROSEN, JACKY", "office": "Senate", "party": "Democrat", "FOR": 9281687.0, "AGAINST": 30334718.0, "total": 39616405.0, "n_ids": 1}, {"name": "LAKE, KARI", "office": "Senate", "party": "Republican", "FOR": 1863383.0, "AGAINST": 30286292.0, "total": 32149675.0, "n_ids": 1}, {"name": "ALSOBROOKS, ANGELA", "office": "Senate", "party": "Democrat", "FOR": 3736714.0, "AGAINST": 26694481.0, "total": 30431195.0, "n_ids": 1}, {"name": "OSBORN, DAN", "office": "Senate", "party": "Independent", "FOR": 12523484.0, "AGAINST": 7995848.0, "total": 20519332.0, "n_ids": 1}, {"name": "KENNEDY, ROBERT, F. JR., SHANAHAN, NICOLE", "office": "President", "party": "Independent", "FOR": 12815123.0, "AGAINST": 7328994.0, "total": 20144117.0, "n_ids": 1}, {"name": "BURGUM, DOUG", "office": "President", "party": "Republican", "FOR": 18724021.0, "AGAINST": 2878.0, "total": 18726899.0, "n_ids": 1}, {"name": "HOGAN, LARRY", "office": "Senate", "party": "Republican", "FOR": 2549997.0, "AGAINST": 16167440.0, "total": 18717437.0, "n_ids": 1}], "top_superpacs": [{"name": "FF PAC", "FOR": 508881474.0, "AGAINST": 711061.0, "total": 509592535.0, "n": 487, "n_cands": 3}, {"name": "MAKE AMERICA GREAT AGAIN INC.", "FOR": 57692924.0, "AGAINST": 319271750.0, "total": 376964674.0, "n": 463, "n_cands": 9}, {"name": "WINSENATE", "FOR": 24226499.0, "AGAINST": 286985666.0, "total": 311212165.0, "n": 573, "n_cands": 19}, {"name": "CONGRESSIONAL LEADERSHIP FUND", "FOR": 16035384.0, "AGAINST": 200749277.0, "total": 216784661.0, "n": 2096, "n_cands": 94}, {"name": "SENATE LEADERSHIP FUND", "FOR": 10653154.0, "AGAINST": 200245589.0, "total": 210898743.0, "n": 286, "n_cands": 11}, {"name": "HMP", "FOR": 18769406.0, "AGAINST": 181070351.0, "total": 199839757.0, "n": 1420, "n_cands": 82}, {"name": "AMERICA PAC", "FOR": 99557317.0, "AGAINST": 74177317.0, "total": 173734634.0, "n": 1186, "n_cands": 45}, {"name": "AMERICANS FOR PROSPERITY ACTION, INC. (AFP ACTION) DBA CVA ACTION AND DBA LIBRE ACTION", "FOR": 105334578.0, "AGAINST": 55998699.0, "total": 161333277.0, "n": 3088, "n_cands": 86}, {"name": "PRESERVE AMERICA PAC", "FOR": 55000.0, "AGAINST": 112266876.0, "total": 112321876.0, "n": 30, "n_cands": 2}, {"name": "SFA FUND, INC", "FOR": 52569647.0, "AGAINST": 29250954.0, "total": 81820601.0, "n": 360, "n_cands": 4}, {"name": "DCCC", "FOR": 4789940.0, "AGAINST": 69468126.0, "total": 74258066.0, "n": 658, "n_cands": 43}, {"name": "RIGHT FOR AMERICA", "FOR": 18463293.0, "AGAINST": 51119933.0, "total": 69583226.0, "n": 42, "n_cands": 2}, {"name": "AMERICAN CROSSROADS", "FOR": 214383.0, "AGAINST": 60053089.0, "total": 60267472.0, "n": 157, "n_cands": 5}, {"name": "AB PAC", "FOR": 0.0, "AGAINST": 58551561.0, "total": 58551561.0, "n": 180, "n_cands": 1}, {"name": "DEFEND AMERICAN JOBS", "FOR": 56287649.0, "AGAINST": 1531013.0, "total": 57818662.0, "n": 65, "n_cands": 20}, {"name": "KEYSTONE RENEWAL PAC", "FOR": 13061836.0, "AGAINST": 41333137.0, "total": 54394973.0, "n": 98, "n_cands": 3}, {"name": "WIN IT BACK PAC", "FOR": 1460532.0, "AGAINST": 52601690.0, "total": 54062222.0, "n": 487, "n_cands": 25}, {"name": "LCV VICTORY FUND", "FOR": 36096898.0, "AGAINST": 13357067.0, "total": 49453965.0, "n": 902, "n_cands": 86}, {"name": "REPUBLICAN ACCOUNTABILITY PAC", "FOR": 19605375.0, "AGAINST": 25262886.0, "total": 44868261.0, "n": 2185, "n_cands": 5}, {"name": "DSCC", "FOR": 0.0, "AGAINST": 43739205.0, "total": 43739205.0, "n": 163, "n_cands": 7}, {"name": "RESTORATION PAC", "FOR": 1140573.0, "AGAINST": 41859257.0, "total": 42999830.0, "n": 67, "n_cands": 6}, {"name": "FAIRSHAKE", "FOR": 27136153.0, "AGAINST": 13525663.0, "total": 40661816.0, "n": 84, "n_cands": 30}, {"name": "UNITED DEMOCRACY PROJECT ('UDP')", "FOR": 13945538.0, "AGAINST": 23914200.0, "total": 37859738.0, "n": 287, "n_cands": 24}, {"name": "NEVER BACK DOWN INC.", "FOR": 32368977.0, "AGAINST": 5377463.0, "total": 37746440.0, "n": 254, "n_cands": 3}, {"name": "NRCC", "FOR": 294670.0, "AGAINST": 36188372.0, "total": 36483042.0, "n": 291, "n_cands": 30}]};
+const FOR='#2E8B57', AGAINST='#B83A3A', NEUTRAL='#1F4E79';
+const fmt=(n)=>'$'+Math.round(n).toLocaleString();
+const fmtS=(v)=>{v=Math.abs(v);return v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(0)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'k':'$'+v;};
+const partyColor={'Democrat':'#1F4E79','Republican':'#B83A3A','Independent':'#6A4C9C','Libertarian':'#D4A017','Green':'#2E8B57','Other/Unknown':'#999','Unknown':'#999'};
+
+// Summary
+const totFor=D.for_against_overall.find(x=>x.direction==='FOR');
+const totAg=D.for_against_overall.find(x=>x.direction==='AGAINST');
+const grand=totFor.total+totAg.total;
+document.getElementById('summary').innerHTML=`
+  <div class="stat"><div class="lbl">Total IE spending</div><div class="val">${fmtS(grand)}</div><div class="sub2">${(totFor.n+totAg.n).toLocaleString()} expenditures</div></div>
+  <div class="stat"><div class="lbl">Spent FOR candidates</div><div class="val" style="color:${FOR}">${fmtS(totFor.total)}</div><div class="sub2">${(100*totFor.total/grand).toFixed(0)}% · ${totFor.n.toLocaleString()} ads</div></div>
+  <div class="stat"><div class="lbl">Spent AGAINST candidates</div><div class="val" style="color:${AGAINST}">${fmtS(totAg.total)}</div><div class="sub2">${(100*totAg.total/grand).toFixed(0)}% · ${totAg.n.toLocaleString()} ads</div></div>
+  <div class="stat"><div class="lbl">Attack-ad ratio</div><div class="val">${(totAg.total/totFor.total).toFixed(2)}×</div><div class="sub2">against : for</div></div>
+`;
+
+function forAgainstChart(canvasId, rows, colorByParty){
+  new Chart(document.getElementById(canvasId),{type:'bar',
+    data:{labels:rows.map(r=>r.name),datasets:[
+      {label:'FOR',data:rows.map(r=>r.FOR),backgroundColor:FOR,stack:'a'},
+      {label:'AGAINST',data:rows.map(r=>r.AGAINST),backgroundColor:AGAINST,stack:'a'}
+    ]},
+    options:{indexAxis:'y',plugins:{legend:{position:'bottom'},
+      tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt(c.parsed.x)}`,footer:i=>'Total: '+fmt(rows[i[0].dataIndex].total)}}},
+      scales:{x:{stacked:true,ticks:{callback:fmtS}},y:{stacked:true,ticks:{font:{size:11}}}},maintainAspectRatio:false}});
+}
+forAgainstChart('party',D.for_against_party);
+forAgainstChart('office',D.for_against_office);
+
+// Candidates (truncate labels)
+function trim(s,n){return s&&s.length>n?s.slice(0,n-1)+'…':s;}
+new Chart(document.getElementById('cands'),{type:'bar',
+  data:{labels:D.top_candidates.map(r=>trim(r.name,24)+' ('+(r.party[0]||'?')+')'),
+    datasets:[{label:'FOR',data:D.top_candidates.map(r=>r.FOR),backgroundColor:FOR,stack:'a'},
+              {label:'AGAINST',data:D.top_candidates.map(r=>r.AGAINST),backgroundColor:AGAINST,stack:'a'}]},
+  options:{indexAxis:'y',plugins:{legend:{position:'bottom'},
+    tooltip:{callbacks:{title:i=>D.top_candidates[i[0].dataIndex].name,
+      label:c=>`${c.dataset.label}: ${fmt(c.parsed.x)}`,
+      footer:i=>{const r=D.top_candidates[i[0].dataIndex];return `${r.office} · ${r.party} · Total ${fmt(r.total)}`;}}}},
+    scales:{x:{stacked:true,ticks:{callback:fmtS}},y:{stacked:true,ticks:{font:{size:10}}}},maintainAspectRatio:false}});
+
+// Super PACs
+new Chart(document.getElementById('pacs'),{type:'bar',
+  data:{labels:D.top_superpacs.map(r=>trim(r.name,30)),
+    datasets:[{label:'FOR',data:D.top_superpacs.map(r=>r.FOR),backgroundColor:FOR,stack:'a'},
+              {label:'AGAINST',data:D.top_superpacs.map(r=>r.AGAINST),backgroundColor:AGAINST,stack:'a'}]},
+  options:{indexAxis:'y',plugins:{legend:{position:'bottom'},
+    tooltip:{callbacks:{title:i=>D.top_superpacs[i[0].dataIndex].name,
+      label:c=>`${c.dataset.label}: ${fmt(c.parsed.x)}`,
+      footer:i=>{const r=D.top_superpacs[i[0].dataIndex];return `${r.n_cands} candidates targeted · Total ${fmt(r.total)}`;}}}},
+    scales:{x:{stacked:true,ticks:{callback:fmtS}},y:{stacked:true,ticks:{font:{size:10}}}},maintainAspectRatio:false}});
+
+// Vendors
+new Chart(document.getElementById('vendors'),{type:'bar',
+  data:{labels:D.contractor_vendors.map(r=>trim(r.name,28)),
+    datasets:[{label:'$ paid',data:D.contractor_vendors.map(r=>r.total),backgroundColor:NEUTRAL,borderRadius:3}]},
+  options:{indexAxis:'y',plugins:{legend:{display:false},
+    tooltip:{callbacks:{label:c=>fmt(c.parsed.x),footer:i=>{const r=D.contractor_vendors[i[0].dataIndex];return `${r.n} payments from ${r.n_cmtes} committees`;}}}},
+    scales:{x:{ticks:{callback:fmtS}},y:{ticks:{font:{size:10}}}},maintainAspectRatio:false}});
+
+// NAICS
+new Chart(document.getElementById('naics'),{type:'bar',
+  data:{labels:D.contractor_naics.map(r=>trim(r.name,26)),
+    datasets:[{label:'$',data:D.contractor_naics.map(r=>r.total),backgroundColor:'#E07B00',borderRadius:3}]},
+  options:{indexAxis:'y',plugins:{legend:{display:false},
+    tooltip:{callbacks:{label:c=>fmt(c.parsed.x),footer:i=>D.contractor_naics[i[0].dataIndex].n+' payments'}}},
+    scales:{x:{ticks:{callback:fmtS}},y:{ticks:{font:{size:10}}}},maintainAspectRatio:false}});
+</script></body></html>

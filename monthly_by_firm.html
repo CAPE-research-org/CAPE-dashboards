@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Monthly Contributions by Firm (2023–2024)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         margin: 0; padding: 24px; background: #f7f8fa; color: #1a1a1a; }
+  h1 { margin: 0 0 4px 0; font-size: 26px; }
+  .sub { color: #555; margin-bottom: 24px; font-size: 14px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 24px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #eaeaea; }
+  .card h2 { margin: 0 0 6px 0; font-size: 16px; color: #1F4E79; }
+  .desc { font-size: 12px; color: #666; margin-bottom: 14px; }
+  .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+              margin-bottom: 12px; }
+  .controls label { font-size: 13px; color: #444; }
+  .controls select, .controls input {
+    font-size: 13px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
+    background: #fff; min-width: 220px;
+  }
+  .chart-wrap { position: relative; height: 380px; }
+  .chart-wrap.tall { height: 520px; }
+  .row2 { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .mini { background: #fff; border-radius: 10px; padding: 12px; border: 1px solid #eaeaea; }
+  .mini h3 { margin: 0 0 2px 0; font-size: 13px; color: #1F4E79;
+             display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .mini .ind { font-weight: 400; color: #888; font-size: 11px; }
+  .mini .total { font-weight: 400; color: #555; font-size: 11px; }
+  .mini .chart-wrap { height: 110px; }
+  .stats { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; }
+  .stat { background: #f0f4f9; border-radius: 8px; padding: 10px 14px; min-width: 140px; }
+  .stat .lbl { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .5px; }
+  .stat .val { font-size: 18px; font-weight: 600; color: #1F4E79; margin-top: 2px; }
+  @media (max-width: 900px) {
+    .row2 { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+  .footer { text-align: center; color: #888; font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<h1>Monthly Contributions by Firm</h1>
+    
+<div class="card">
+  <div class="stats" id="stats"></div>
+</div>
+
+<div class="card">
+  <h2>Total Matched Giving by Month</h2>
+  <div class="desc">All matched corporate-PAC contributions summed across firms</div>
+  <div class="chart-wrap"><canvas id="totalChart"></canvas></div>
+</div>
+
+<div class="row2">
+  <div class="card">
+    <h2>Single Firm Drill-Down</h2>
+    <div class="desc">Pick any firm to see its month-by-month giving</div>
+    <div class="controls">
+      <label for="firmPick">Firm:</label>
+      <select id="firmPick"></select>
+    </div>
+    <div class="chart-wrap"><canvas id="firmChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h2>Top N Firms</h2>
+    <div class="desc">Compare the biggest givers side by side</div>
+    <div class="controls">
+      <label for="topN">Show top:</label>
+      <select id="topN">
+        <option value="3">3 firms</option>
+        <option value="5" selected>5 firms</option>
+        <option value="10">10 firms</option>
+        <option value="20">20 firms</option>
+      </select>
+    </div>
+    <div class="chart-wrap"><canvas id="topChart"></canvas></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Industry Stack (Monthly)</h2>
+  <div class="desc">Each month broken down by industry</div>
+  <div class="chart-wrap tall"><canvas id="stackChart"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>All Firms (Mini Trends)</h2>
+  <div class="desc">Sparkline per firm. Filter by industry or search.</div>
+  <div class="controls">
+    <label for="indFilter">Industry:</label>
+    <select id="indFilter"></select>
+    <label for="search">Search:</label>
+    <input id="search" type="text" placeholder="type a firm name…">
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="footer">Source: FEC itpas2 (2023–2024) · enriched with firm/industry tags · CAPE project</div>
+
+<script>
+const DATA = {"months": ["2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12"], "firms": [{"name": "Meta Platforms, Inc.", "industry": null, "total": 1484995.0, "n_txns": 812, "series": [16093.0, 0, 0, 3592.0, 18632.0, 13000.0, 20000.0, 13629.0, 0, 0, 474.0, 24268.0, 185804.0, 93627.0, 15066.0, 1153.0, 107916.0, 128206.0, 5152.0, 111497.0, 119564.0, 555810.0, 3314.0, 48198.0]}, {"name": "AMERICAN EXPRESS CO", "industry": null, "total": 1407674.0, "n_txns": 72, "series": [1566.0, 0, 0, 0, 0, 5000.0, 0, 0, 0, 0, 0, 0, 9357.0, 0, 0, 131742.0, 36118.0, 28633.0, 34097.0, 36332.0, 447112.0, 368303.0, 23200.0, 286214.0]}, {"name": "Hall Render Killian Heath & Lyman", "industry": "Legal", "total": 139000.0, "n_txns": 51, "series": [0, 23500.0, 5000.0, 2000.0, 0, 10000.0, 3000.0, 1000.0, 8000.0, 0.0, 2500.0, 6000.0, 5000.0, 15000.0, 22500.0, 1000.0, 6500.0, 0, 5000.0, 3000.0, 10000.0, 6500.0, 1000.0, 2500.0]}, {"name": "UnitedHealth Group", "industry": "Healthcare", "total": 90683.0, "n_txns": 19, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84153.0, 5411.0, 1119.0]}, {"name": "Torch Technologies", "industry": "Defense", "total": 79600.0, "n_txns": 33, "series": [2500.0, 2000.0, 6000.0, 0, 6000.0, 1500.0, 0, 0, 7000.0, 1000.0, 0, 6000.0, 0, 3000.0, 10000.0, 6000.0, 4100.0, 0, 4000.0, 2000.0, 7500.0, 10500.0, 500.0, 0]}, {"name": "Universal Technical Institute", "industry": "Education", "total": 62500.0, "n_txns": 31, "series": [0, 0, 0, 0, 0, 5000.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23000.0, 0, 0, 0, 0, 0, 34500.0, 0, 0]}, {"name": "VGM Group", "industry": "Healthcare Services", "total": 51700.0, "n_txns": 26, "series": [0, 0, 0, 2500.0, 2500.0, 0, 0, 0, 3500.0, 2500.0, 7500.0, 0, 0, 2500.0, 2000.0, 4500.0, 7000.0, 0, 2900.0, 8300.0, 3500.0, 2500.0, 0, 0]}, {"name": "Sammons Enterprises", "industry": "Insurance", "total": 46500.0, "n_txns": 25, "series": [0, 0, 0, 0, 0, 0, 0, 0, 4500.0, 1000.0, 0, 0, 0, 5500.0, 3000.0, 10000.0, 0, 4500.0, 15000.0, 3000.0, 0, 0, 0, 0]}, {"name": "1-800 Contacts", "industry": "Retail", "total": 40500.0, "n_txns": 12, "series": [0, 0, 2500.0, 0, 6500.0, 2500.0, 0, 0, 0, 0, 10000.0, 0, 0, 9500.0, 0, 5000.0, 3500.0, 0, 1000.0, 0, 0, 0, 0, 0]}, {"name": "VISA INC.", "industry": null, "total": 39319.0, "n_txns": 4, "series": [0, 0, 0, 8962.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8077.0, 17822.0, 4458.0, 0, 0]}, {"name": "Fifth Third Bancorp", "industry": "Banking", "total": 33000.0, "n_txns": 12, "series": [0, 0, 10000.0, 0, 1000.0, 0, 0, 0, 5500.0, 0, 4000.0, 0, 0, 0, 12500.0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Constellation Brands", "industry": "Beverages", "total": 32500.0, "n_txns": 9, "series": [0, 0, 7500.0, 0, 2500.0, 7500.0, 0, 0, 0, 0, 0, 0, 0, 2500.0, 0, 0, 0, 0, 0, 2500.0, 10000.0, 0, 0, 0]}, {"name": "Denbury", "industry": "Energy", "total": 30383.0, "n_txns": 10, "series": [0, 0, 0, 0, 0, 0, 0, 0, 10500.0, 19883.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Burns & McDonnell", "industry": "Engineering", "total": 29000.0, "n_txns": 8, "series": [0, 0, 0, 0, 0, 0, 0, 0, 3000.0, 5000.0, 0, 0, 5000.0, 0, 0, 0, 0, 0, 0, 6000.0, 0, 5000.0, 0, 5000.0]}, {"name": "Austal USA", "industry": "Defense", "total": 27900.0, "n_txns": 16, "series": [5000.0, 0, 6000.0, -2100.0, 0, 0, 0, 1500.0, 0, 4500.0, 0, 2000.0, 0, 2500.0, 0, 5000.0, 0, 0, 2000.0, 0, 0, 0, 1500.0, 0]}, {"name": "Sazerac", "industry": "Spirits", "total": 26895.0, "n_txns": 49, "series": [2102.0, 978.0, 250.0, 1099.0, 1213.0, 2188.0, 532.0, 0, 539.0, 0, 1084.0, 814.0, 1339.0, 623.0, 2777.0, 3416.0, 1026.0, 0, 503.0, 0, 2523.0, 472.0, 2262.0, 1155.0]}, {"name": "Air Liquide", "industry": "Industrial Gases", "total": 26500.0, "n_txns": 13, "series": [2500.0, 0, 0, 1500.0, 0, 0, 0, 0, 1000.0, 7500.0, 0, 0, 0, 2500.0, 0, 0, 4000.0, 0, 0, 0, 2000.0, 0, 5500.0, 0]}, {"name": "Matson", "industry": "Shipping", "total": 25000.0, "n_txns": 6, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5000.0, 0, 0, 0, 0, 0, 20000.0, 0, 0, 0]}, {"name": "Ingram Barge", "industry": "Shipping", "total": 23802.0, "n_txns": 12, "series": [0, 0, 0, 2500.0, 5246.0, 0, 0, 0, 1000.0, 0, 2500.0, 6000.0, 0, 0, 0, 5000.0, 0, 1899.0, 0, -343.0, 0, 0, 0, 0]}, {"name": "Garmin", "industry": "Electronics", "total": 23500.0, "n_txns": 9, "series": [0, 0, 0, 0, 0, 6000.0, 2500.0, 2500.0, 2500.0, 0, 0, 0, 0, 0, 0, 0, 0, 5000.0, 2500.0, 0, 2500.0, 0, 0, 0]}, {"name": "Westervelt", "industry": "Forest Products", "total": 22150.0, "n_txns": 9, "series": [0, 0, 0, 0, 2500.0, 0, 0, 0, 0, 0, 0, 5000.0, 0, 2500.0, 0, 0, 1500.0, 0, 0, 150.0, 1000.0, 4500.0, 0, 5000.0]}, {"name": "Cadence Bank", "industry": "Banking", "total": 20000.0, "n_txns": 4, "series": [0, 0, 0, 0, 0, 0, 0, 5000.0, 0, 0, 0, 5000.0, 0, 5000.0, 0, 0, 5000.0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Intersect Power", "industry": "Renewable Energy", "total": 20000.0, "n_txns": 9, "series": [0, 0, 0, 4500.0, 0, 0, 0, 0, 0, 8000.0, 0, 0, 0, 0, 7500.0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Peabody Energy", "industry": "Coal", "total": 19200.0, "n_txns": 6, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8200.0, 2500.0, 0, 0, 2500.0, 4500.0, 0, 0, 1500.0]}, {"name": "TECO Energy", "industry": "Utility", "total": 17500.0, "n_txns": 13, "series": [0, 0, 7000.0, 0, 0, 3000.0, 0, 0, 3000.0, 0, 0, 3500.0, 0, 0, 1000.0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Salem Media Group", "industry": "Media", "total": 17300.0, "n_txns": 7, "series": [1500.0, 0, 0, 0, 0, 0, 0, 5000.0, 0, 2500.0, 0, 2500.0, 1500.0, 0, 0, 0, 1000.0, 0, 0, 3300.0, 0, 0, 0, 0]}, {"name": "Lincoln National", "industry": "Insurance", "total": 17000.0, "n_txns": 8, "series": [0, 0, 0, 0, 0, 1000.0, 0, 2500.0, 0, 0, 0, 0, 0, 0, 0, 1500.0, 3500.0, 0, 2500.0, 0, 2500.0, 3500.0, 0, 0]}, {"name": "T-Mobile", "industry": "Telecom", "total": 12500.0, "n_txns": 27, "series": [0, 0, 2000.0, 500.0, 0, 1500.0, 1500.0, 0, 500.0, 0, 500.0, 1500.0, 0, 500.0, 1500.0, 0, 0, 0, 500.0, 0, 2000.0, 0, 0, 0]}, {"name": "SHOPIFY INC.", "industry": null, "total": 11825.0, "n_txns": 3, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3180.0, 3153.0, 0, 5492.0]}, {"name": "Oracle", "industry": "Tech", "total": 8380.0, "n_txns": 75, "series": [510.0, 410.0, 1100.0, 360.0, 230.0, 780.0, 590.0, 0, 1240.0, 730.0, 270.0, 180.0, 0, 0, 640.0, 0, 90.0, 740.0, 370.0, 0, 140.0, 0, 0, 0]}, {"name": "McDonald's", "industry": "Food Service", "total": 6684.0, "n_txns": 8, "series": [0, 0, 0, 0, 0, 0, 0, 0, 7684.0, 0, 0, -1000.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Walmart Inc.", "industry": null, "total": 3101.0, "n_txns": 17, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 958.0, 2143.0, 0, 0]}, {"name": "Apple Inc.", "industry": null, "total": 3018.0, "n_txns": 1, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3018.0]}, {"name": "L3Harris", "industry": "Defense", "total": 2500.0, "n_txns": 1, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2500.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "AMAZON COM INC", "industry": null, "total": 960.0, "n_txns": 27, "series": [0, 0, 0, 0, 0, 0, 0, 0, 16.0, 0, 6.0, 412.0, 61.0, 22.0, 0, 4.0, 18.0, 129.0, 40.0, 252.0, 0, 0, 0, 0]}, {"name": "Uber Technologies, Inc", "industry": null, "total": 440.0, "n_txns": 9, "series": [0, 0, 0, 0, 116.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 298.0, 26.0, 0, 0]}, {"name": "HOME DEPOT, INC.", "industry": null, "total": 267.0, "n_txns": 1, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 267.0, 0, 0, 0]}, {"name": "PepsiCo", "industry": "Beverages", "total": 265.0, "n_txns": 2, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 113.0, 0, 0, 0, 0, 0, 0, 152.0, 0, 0]}, {"name": "Toyota", "industry": "Automotive", "total": 238.0, "n_txns": 1, "series": [0, 0, 0, 238.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "CHEVRON CORP", "industry": null, "total": 94.0, "n_txns": 2, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 71.0, 23.0, 0, 0]}, {"name": "MCDONALDS CORP", "industry": null, "total": 70.0, "n_txns": 2, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 70.0, 0, 0]}, {"name": "EXXON MOBIL CORP", "industry": null, "total": 49.0, "n_txns": 2, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36.0, 0, 0, 0, 0, 13.0, 0, 0]}, {"name": "BANK OF AMERICA CORP /DE/", "industry": null, "total": 36.0, "n_txns": 2, "series": [0, 0, 0, 0, 0, 0, 26.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10.0, 0]}], "industries": [{"name": "Legal", "total": 139000.0, "series": [0, 23500.0, 5000.0, 2000.0, 0, 10000.0, 3000.0, 1000.0, 8000.0, 0.0, 2500.0, 6000.0, 5000.0, 15000.0, 22500.0, 1000.0, 6500.0, 0, 5000.0, 3000.0, 10000.0, 6500.0, 1000.0, 2500.0]}, {"name": "Defense", "total": 110000.0, "series": [7500.0, 2000.0, 12000.0, -2100.0, 6000.0, 1500.0, 0, 1500.0, 7000.0, 5500.0, 0, 10500.0, 0, 5500.0, 10000.0, 11000.0, 4100.0, 0, 6000.0, 2000.0, 7500.0, 10500.0, 2000.0, 0]}, {"name": "Healthcare", "total": 90683.0, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84153.0, 5411.0, 1119.0]}, {"name": "Insurance", "total": 63500.0, "series": [0, 0, 0, 0, 0, 1000.0, 0, 2500.0, 4500.0, 1000.0, 0, 0, 0, 5500.0, 3000.0, 11500.0, 3500.0, 4500.0, 17500.0, 3000.0, 2500.0, 3500.0, 0, 0]}, {"name": "Education", "total": 62500.0, "series": [0, 0, 0, 0, 0, 5000.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23000.0, 0, 0, 0, 0, 0, 34500.0, 0, 0]}, {"name": "Banking", "total": 53000.0, "series": [0, 0, 10000.0, 0, 1000.0, 0, 0, 5000.0, 5500.0, 0, 4000.0, 5000.0, 0, 5000.0, 12500.0, 0, 5000.0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Healthcare Services", "total": 51700.0, "series": [0, 0, 0, 2500.0, 2500.0, 0, 0, 0, 3500.0, 2500.0, 7500.0, 0, 0, 2500.0, 2000.0, 4500.0, 7000.0, 0, 2900.0, 8300.0, 3500.0, 2500.0, 0, 0]}, {"name": "Shipping", "total": 48802.0, "series": [0, 0, 0, 2500.0, 5246.0, 0, 0, 0, 1000.0, 0, 2500.0, 6000.0, 0, 0, 5000.0, 5000.0, 0, 1899.0, 0, -343.0, 20000.0, 0, 0, 0]}, {"name": "Retail", "total": 40500.0, "series": [0, 0, 2500.0, 0, 6500.0, 2500.0, 0, 0, 0, 0, 10000.0, 0, 0, 9500.0, 0, 5000.0, 3500.0, 0, 1000.0, 0, 0, 0, 0, 0]}, {"name": "Beverages", "total": 32765.0, "series": [0, 0, 7500.0, 0, 2500.0, 7500.0, 0, 0, 0, 0, 0, 0, 0, 2500.0, 113.0, 0, 0, 0, 0, 2500.0, 10000.0, 152.0, 0, 0]}, {"name": "Energy", "total": 30383.0, "series": [0, 0, 0, 0, 0, 0, 0, 0, 10500.0, 19883.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Engineering", "total": 29000.0, "series": [0, 0, 0, 0, 0, 0, 0, 0, 3000.0, 5000.0, 0, 0, 5000.0, 0, 0, 0, 0, 0, 0, 6000.0, 0, 5000.0, 0, 5000.0]}, {"name": "Spirits", "total": 26895.0, "series": [2102.0, 978.0, 250.0, 1099.0, 1213.0, 2188.0, 532.0, 0, 539.0, 0, 1084.0, 814.0, 1339.0, 623.0, 2777.0, 3416.0, 1026.0, 0, 503.0, 0, 2523.0, 472.0, 2262.0, 1155.0]}, {"name": "Industrial Gases", "total": 26500.0, "series": [2500.0, 0, 0, 1500.0, 0, 0, 0, 0, 1000.0, 7500.0, 0, 0, 0, 2500.0, 0, 0, 4000.0, 0, 0, 0, 2000.0, 0, 5500.0, 0]}, {"name": "Electronics", "total": 23500.0, "series": [0, 0, 0, 0, 0, 6000.0, 2500.0, 2500.0, 2500.0, 0, 0, 0, 0, 0, 0, 0, 0, 5000.0, 2500.0, 0, 2500.0, 0, 0, 0]}, {"name": "Forest Products", "total": 22150.0, "series": [0, 0, 0, 0, 2500.0, 0, 0, 0, 0, 0, 0, 5000.0, 0, 2500.0, 0, 0, 1500.0, 0, 0, 150.0, 1000.0, 4500.0, 0, 5000.0]}, {"name": "Renewable Energy", "total": 20000.0, "series": [0, 0, 0, 4500.0, 0, 0, 0, 0, 0, 8000.0, 0, 0, 0, 0, 7500.0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Coal", "total": 19200.0, "series": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8200.0, 2500.0, 0, 0, 2500.0, 4500.0, 0, 0, 1500.0]}, {"name": "Utility", "total": 17500.0, "series": [0, 0, 7000.0, 0, 0, 3000.0, 0, 0, 3000.0, 0, 0, 3500.0, 0, 0, 1000.0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Media", "total": 17300.0, "series": [1500.0, 0, 0, 0, 0, 0, 0, 5000.0, 0, 2500.0, 0, 2500.0, 1500.0, 0, 0, 0, 1000.0, 0, 0, 3300.0, 0, 0, 0, 0]}, {"name": "Telecom", "total": 12500.0, "series": [0, 0, 2000.0, 500.0, 0, 1500.0, 1500.0, 0, 500.0, 0, 500.0, 1500.0, 0, 500.0, 1500.0, 0, 0, 0, 500.0, 0, 2000.0, 0, 0, 0]}, {"name": "Tech", "total": 8380.0, "series": [510.0, 410.0, 1100.0, 360.0, 230.0, 780.0, 590.0, 0, 1240.0, 730.0, 270.0, 180.0, 0, 0, 640.0, 0, 90.0, 740.0, 370.0, 0, 140.0, 0, 0, 0]}, {"name": "Food Service", "total": 6684.0, "series": [0, 0, 0, 0, 0, 0, 0, 0, 7684.0, 0, 0, -1000.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"name": "Automotive", "total": 238.0, "series": [0, 0, 0, 238.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}]};
+const months = DATA.months;
+const fmt = (n) => '$' + Math.round(n).toLocaleString();
+const fmtShort = (v) => v >= 1e6 ? '$' + (v/1e6).toFixed(1) + 'M'
+                       : v >= 1e3 ? '$' + (v/1e3).toFixed(0) + 'k'
+                       : '$' + v;
+
+// Palette
+const palette = ['#1F4E79','#E07B00','#2E8B57','#B83A3A','#6A4C9C',
+                 '#0E7C7B','#C44569','#5B7553','#D4A017','#3A5F8F',
+                 '#A0522D','#4682B4','#8B4513','#708090','#9370DB',
+                 '#20B2AA','#CD5C5C','#556B2F','#BC8F8F','#4169E1'];
+
+// ===== Stats strip =====
+const totalMatched = DATA.firms.reduce((s,f)=>s+f.total,0);
+const totalTxns    = DATA.firms.reduce((s,f)=>s+f.n_txns,0);
+document.getElementById('stats').innerHTML = `
+  <div class="stat"><div class="lbl">Firms matched</div><div class="val">${DATA.firms.length}</div></div>
+  <div class="stat"><div class="lbl">Industries</div><div class="val">${DATA.industries.length}</div></div>
+  <div class="stat"><div class="lbl">Months covered</div><div class="val">${months.length}</div></div>
+  <div class="stat"><div class="lbl">Transactions</div><div class="val">${totalTxns.toLocaleString()}</div></div>
+  <div class="stat"><div class="lbl">Total $</div><div class="val">${fmt(totalMatched)}</div></div>
+`;
+
+// ===== Total by month =====
+const totalSeries = months.map((_, i) =>
+  DATA.firms.reduce((s, f) => s + f.series[i], 0));
+
+new Chart(document.getElementById('totalChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [{ label: 'Total $', data: totalSeries,
+                 backgroundColor: '#1F4E79', borderRadius: 3 }]
+  },
+  options: {
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => fmt(c.parsed.y) } }
+    },
+    scales: {
+      x: { ticks: { font: { size: 10 } } },
+      y: { ticks: { callback: fmtShort } }
+    },
+    maintainAspectRatio: false
+  }
+});
+
+// ===== Single firm picker =====
+const firmPick = document.getElementById('firmPick');
+DATA.firms.forEach((f, i) => {
+  const opt = document.createElement('option');
+  opt.value = i; opt.textContent = `${f.name}  (${fmt(f.total)})`;
+  firmPick.appendChild(opt);
+});
+
+const firmCtx = document.getElementById('firmChart');
+let firmChart = null;
+function drawFirm(idx) {
+  const f = DATA.firms[idx];
+  if (firmChart) firmChart.destroy();
+  firmChart = new Chart(firmCtx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{ label: f.name, data: f.series,
+                   backgroundColor: palette[idx % palette.length], borderRadius: 3 }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: f.industry ? `Industry: ${f.industry}` : 'Industry: —',
+                 font: { size: 12 }, color: '#666' },
+        tooltip: { callbacks: { label: c => fmt(c.parsed.y) } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 } } },
+        y: { ticks: { callback: fmtShort } }
+      },
+      maintainAspectRatio: false
+    }
+  });
+}
+firmPick.addEventListener('change', e => drawFirm(+e.target.value));
+drawFirm(0);
+
+// ===== Top N overlay =====
+const topCtx = document.getElementById('topChart');
+let topChart = null;
+function drawTop(n) {
+  const top = DATA.firms.slice(0, n);
+  if (topChart) topChart.destroy();
+  topChart = new Chart(topCtx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: top.map((f, i) => ({
+        label: f.name, data: f.series,
+        borderColor: palette[i % palette.length],
+        backgroundColor: palette[i % palette.length],
+        tension: 0.25, pointRadius: 2.5
+      }))
+    },
+    options: {
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 } } },
+        y: { ticks: { callback: fmtShort } }
+      },
+      maintainAspectRatio: false
+    }
+  });
+}
+document.getElementById('topN').addEventListener('change', e => drawTop(+e.target.value));
+drawTop(5);
+
+// ===== Industry stack =====
+new Chart(document.getElementById('stackChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: DATA.industries.map((ind, i) => ({
+      label: ind.name, data: ind.series,
+      backgroundColor: palette[i % palette.length],
+      stack: 'a', borderWidth: 0
+    }))
+  },
+  options: {
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } },
+      tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } }
+    },
+    scales: {
+      x: { stacked: true, ticks: { font: { size: 10 } } },
+      y: { stacked: true, ticks: { callback: fmtShort } }
+    },
+    maintainAspectRatio: false
+  }
+});
+
+// ===== Mini sparklines =====
+const indFilter = document.getElementById('indFilter');
+const searchBox = document.getElementById('search');
+
+const allInds = [...new Set(DATA.firms.map(f => f.industry || '—'))].sort();
+indFilter.innerHTML = '<option value="">All industries</option>' +
+  allInds.map(i => `<option value="${i}">${i}</option>`).join('');
+
+const grid = document.getElementById('grid');
+function renderGrid() {
+  const ind = indFilter.value;
+  const q = searchBox.value.trim().toLowerCase();
+  grid.innerHTML = '';
+  DATA.firms.forEach((f, i) => {
+    if (ind && (f.industry || '—') !== ind) return;
+    if (q && !f.name.toLowerCase().includes(q)) return;
+
+    const card = document.createElement('div');
+    card.className = 'mini';
+    card.innerHTML = `
+      <h3>
+        <span title="${f.name}">${f.name.length > 26 ? f.name.slice(0,24)+'…' : f.name}</span>
+        <span class="total">${fmt(f.total)}</span>
+      </h3>
+      <div class="ind">${f.industry || '—'}</div>
+      <div class="chart-wrap"><canvas></canvas></div>
+    `;
+    grid.appendChild(card);
+    const canvas = card.querySelector('canvas');
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{ data: f.series,
+                     backgroundColor: palette[i % palette.length],
+                     borderRadius: 2 }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => `${months[c.dataIndex]}: ${fmt(c.parsed.y)}` } }
+        },
+        scales: {
+          x: { ticks: { display: false }, grid: { display: false } },
+          y: { ticks: { display: false }, grid: { display: false } }
+        },
+        maintainAspectRatio: false
+      }
+    });
+  });
+  if (!grid.children.length) {
+    grid.innerHTML = '<div style="grid-column: 1/-1; padding: 20px; text-align: center; color: #888;">No firms match.</div>';
+  }
+}
+indFilter.addEventListener('change', renderGrid);
+searchBox.addEventListener('input', renderGrid);
+renderGrid();
+</script>
+</body>
+</html>
